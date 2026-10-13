@@ -1,0 +1,8 @@
+{
+  "name": "Paradise Academy",
+  "description": "پلتفرم تخصصی آموزش زبان انگلیسی کودکان و نوجوانان پارادایس - Paradise Academy English Learning Platform",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

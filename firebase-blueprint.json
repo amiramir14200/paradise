@@ -1,0 +1,207 @@
+{
+  "entities": {
+    "user": {
+      "title": "User Profile",
+      "description": "User profile with role-based access for students, teachers, guardians, and admins",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "fullName": { "type": "string", "maxLength": 100 },
+        "englishName": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["admin", "teacher", "student", "guardian"] },
+        "phone": { "type": "string", "maxLength": 20 },
+        "ageBracket": { "type": "string", "enum": ["6-9", "10-12", "13-17", "adult"] },
+        "guardianId": { "type": "string", "maxLength": 128 },
+        "avatar": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "fullName", "role"]
+    },
+    "admin": {
+      "title": "Admin Record",
+      "description": "Trusted collection defining administrator accounts",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email"]
+    },
+    "course": {
+      "title": "Course",
+      "description": "English language course definition",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 150 },
+        "titleEn": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "ageBracket": { "type": "string", "enum": ["6-9", "10-12", "13-17", "all"] },
+        "level": { "type": "string", "enum": ["starter", "elementary", "intermediate", "upper-intermediate", "advanced"] },
+        "price": { "type": "number" },
+        "thumbnail": { "type": "string", "maxLength": 300 },
+        "isPublished": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "ageBracket", "level", "price", "isPublished"]
+    },
+    "lesson": {
+      "title": "Lesson",
+      "description": "Structured educational unit inside a course",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 150 },
+        "titleEn": { "type": "string", "maxLength": 150 },
+        "order": { "type": "number" },
+        "summary": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["courseId", "title", "order"]
+    },
+    "liveClass": {
+      "title": "Live Group Class",
+      "description": "Scheduled online live group sessions with teacher and meeting link",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string", "maxLength": 128 },
+        "teacherId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 150 },
+        "scheduledAt": { "type": "string", "maxLength": 50 },
+        "durationMinutes": { "type": "number" },
+        "meetingUrl": { "type": "string", "maxLength": 300 },
+        "capacity": { "type": "number" },
+        "status": { "type": "string", "enum": ["scheduled", "in-progress", "completed", "cancelled"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["courseId", "teacherId", "title", "scheduledAt", "status"]
+    },
+    "enrollment": {
+      "title": "Enrollment and Order",
+      "description": "Student course enrollment and purchase transaction record",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 128 },
+        "courseId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["pending", "active", "cancelled"] },
+        "paymentMethod": { "type": "string", "enum": ["online", "card_to_card", "scholarship"] },
+        "amount": { "type": "number" },
+        "currency": { "type": "string", "enum": ["toman", "rial"] },
+        "receiptRef": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["studentId", "courseId", "status", "amount", "currency"]
+    },
+    "quiz": {
+      "title": "Quiz / Exam",
+      "description": "Interactive placement or unit assessment",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 150 },
+        "ageBracket": { "type": "string", "enum": ["6-9", "10-12", "13-17", "all"] },
+        "timeLimitMinutes": { "type": "number" },
+        "passingScore": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "passingScore"]
+    },
+    "quizAttempt": {
+      "title": "Quiz Attempt",
+      "description": "Student submission for a quiz or exam",
+      "type": "object",
+      "properties": {
+        "quizId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "score": { "type": "number" },
+        "passed": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["quizId", "studentId", "score", "passed"]
+    },
+    "attendance": {
+      "title": "Attendance Record",
+      "description": "Class session attendance for a student",
+      "type": "object",
+      "properties": {
+        "classId": { "type": "string", "maxLength": 128 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["present", "absent", "late", "excused"] },
+        "note": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["classId", "studentId", "status"]
+    },
+    "cmsPage": {
+      "title": "CMS Page",
+      "description": "Customizable landing page content or site section",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string", "maxLength": 100 },
+        "title": { "type": "string", "maxLength": 150 },
+        "isPublished": { "type": "boolean" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["slug", "title", "isPublished"]
+    },
+    "siteSettings": {
+      "title": "Site Settings",
+      "description": "Global settings for currency, branding, and auth designer",
+      "type": "object",
+      "properties": {
+        "currency": { "type": "string", "enum": ["toman", "rial"] },
+        "brandName": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["currency", "brandName"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "User profiles for authenticated accounts"
+    },
+    "/admins/{adminId}": {
+      "schema": "admin",
+      "description": "System administrator identifiers"
+    },
+    "/courses/{courseId}": {
+      "schema": "course",
+      "description": "Public catalog of English courses"
+    },
+    "/lessons/{lessonId}": {
+      "schema": "lesson",
+      "description": "Individual lessons associated with courses"
+    },
+    "/liveClasses/{classId}": {
+      "schema": "liveClass",
+      "description": "Online live group classes"
+    },
+    "/enrollments/{enrollmentId}": {
+      "schema": "enrollment",
+      "description": "Student course enrollment orders and subscriptions"
+    },
+    "/quizzes/{quizId}": {
+      "schema": "quiz",
+      "description": "Assessment tests and quizzes"
+    },
+    "/quizAttempts/{attemptId}": {
+      "schema": "quizAttempt",
+      "description": "Student quiz submissions"
+    },
+    "/attendances/{attendanceId}": {
+      "schema": "attendance",
+      "description": "Student attendance in live classes"
+    },
+    "/cmsPages/{pageId}": {
+      "schema": "cmsPage",
+      "description": "Editable CMS pages"
+    },
+    "/siteSettings/{settingId}": {
+      "schema": "siteSettings",
+      "description": "System-wide settings"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  paradise-academy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: paradise_academy_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - APP_URL=http://localhost:3000
+      - ZARINPAL_MERCHANT_ID=
+      - ZARINPAL_SANDBOX=true
+    env_file:
+      - .env
+    volumes:
+      - ./dist:/app/dist:ro

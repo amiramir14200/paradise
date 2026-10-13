@@ -1,0 +1,189 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny catch-all safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'amiramir14200@gmail.com'
+      );
+    }
+
+    function isTeacher() {
+      return isSignedIn() && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher')
+      );
+    }
+
+    // --- Users Collection ---
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() <= 128 &&
+             data.email is string && data.email.size() <= 128 &&
+             data.fullName is string && data.fullName.size() <= 100 &&
+             data.role in ['admin', 'teacher', 'student', 'guardian'];
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin() || isTeacher());
+      allow list: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) && (
+        incoming().role in ['student', 'guardian'] || isAdmin()
+      );
+      allow update: if isSignedIn() && isValidUser(incoming()) && (
+        isAdmin() ||
+        (request.auth.uid == userId && incoming().uid == existing().uid && incoming().role == existing().role)
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- Admins Collection ---
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // --- Courses Collection ---
+    function isValidCourse(data) {
+      return data.title is string && data.title.size() <= 150 &&
+             data.ageBracket in ['6-9', '10-12', '13-17', 'all'] &&
+             data.level in ['starter', 'elementary', 'intermediate', 'upper-intermediate', 'advanced'] &&
+             data.price is number && data.price >= 0 &&
+             data.isPublished is bool;
+    }
+
+    match /courses/{courseId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() && isValidCourse(incoming());
+    }
+
+    // --- Lessons Collection ---
+    function isValidLesson(data) {
+      return data.courseId is string && data.courseId.size() <= 128 &&
+             data.title is string && data.title.size() <= 150 &&
+             data.order is number;
+    }
+
+    match /lessons/{lessonId} {
+      allow read: if true;
+      allow create, update, delete: if (isAdmin() || isTeacher()) && isValidLesson(incoming());
+    }
+
+    // --- Live Classes Collection ---
+    function isValidLiveClass(data) {
+      return data.courseId is string && data.courseId.size() <= 128 &&
+             data.teacherId is string && data.teacherId.size() <= 128 &&
+             data.title is string && data.title.size() <= 150 &&
+             data.status in ['scheduled', 'in-progress', 'completed', 'cancelled'];
+    }
+
+    match /liveClasses/{classId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if (isAdmin() || (isTeacher() && incoming().teacherId == request.auth.uid)) && isValidLiveClass(incoming());
+    }
+
+    // --- Enrollments Collection ---
+    function isValidEnrollment(data) {
+      return data.studentId is string && data.studentId.size() <= 128 &&
+             data.courseId is string && data.courseId.size() <= 128 &&
+             data.status in ['pending', 'active', 'cancelled'] &&
+             data.amount is number && data.amount >= 0 &&
+             data.currency in ['toman', 'rial'];
+    }
+
+    match /enrollments/{enrollmentId} {
+      allow get: if isSignedIn() && (resource.data.studentId == request.auth.uid || isAdmin() || isTeacher());
+      allow list: if isAdmin() || (isSignedIn() && resource.data.studentId == request.auth.uid);
+      allow create: if isSignedIn() && isValidEnrollment(incoming()) && (
+        incoming().studentId == request.auth.uid || isAdmin()
+      );
+      allow update: if (isAdmin() || (isSignedIn() && incoming().studentId == request.auth.uid && incoming().studentId == existing().studentId)) && isValidEnrollment(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // --- Quizzes Collection ---
+    function isValidQuiz(data) {
+      return data.title is string && data.title.size() <= 150 &&
+             data.passingScore is number && data.passingScore >= 0;
+    }
+
+    match /quizzes/{quizId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if (isAdmin() || isTeacher()) && isValidQuiz(incoming());
+    }
+
+    // --- Quiz Attempts Collection ---
+    function isValidQuizAttempt(data) {
+      return data.quizId is string && data.quizId.size() <= 128 &&
+             data.studentId is string && data.studentId.size() <= 128 &&
+             data.score is number &&
+             data.passed is bool;
+    }
+
+    match /quizAttempts/{attemptId} {
+      allow get: if isSignedIn() && (resource.data.studentId == request.auth.uid || isAdmin() || isTeacher());
+      allow list: if isAdmin() || isTeacher() || (isSignedIn() && resource.data.studentId == request.auth.uid);
+      allow create: if isSignedIn() && incoming().studentId == request.auth.uid && isValidQuizAttempt(incoming());
+      allow update, delete: if isAdmin() || isTeacher();
+    }
+
+    // --- Attendances Collection ---
+    function isValidAttendance(data) {
+      return data.classId is string && data.classId.size() <= 128 &&
+             data.studentId is string && data.studentId.size() <= 128 &&
+             data.status in ['present', 'absent', 'late', 'excused'];
+    }
+
+    match /attendances/{attendanceId} {
+      allow read: if isSignedIn() && (resource.data.studentId == request.auth.uid || isTeacher() || isAdmin());
+      allow create, update, delete: if (isAdmin() || isTeacher()) && isValidAttendance(incoming());
+    }
+
+    // --- CMS Pages Collection ---
+    function isValidCmsPage(data) {
+      return data.slug is string && data.slug.size() <= 100 &&
+             data.title is string && data.title.size() <= 150 &&
+             data.isPublished is bool;
+    }
+
+    match /cmsPages/{pageId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() && isValidCmsPage(incoming());
+    }
+
+    // --- Site Settings Collection ---
+    function isValidSiteSetting(data) {
+      return data.currency in ['toman', 'rial'] &&
+             data.brandName is string && data.brandName.size() <= 100;
+    }
+
+    match /siteSettings/{settingId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() && isValidSiteSetting(incoming());
+    }
+  }
+}
